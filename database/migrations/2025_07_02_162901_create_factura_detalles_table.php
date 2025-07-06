@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('factura_detalles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('factura_id')->constrained()->onDelete('cascade');
-            $table->foreignId('producto_id')->constrained();
+            $table->foreignId('factura_id')->constrained('facturas')->onDelete('cascade');
+            $table->foreignId('producto_id')->constrained('productos')->onDelete('cascade');
             $table->integer('cantidad');
-            $table->decimal('precio_unitario', 8, 2);
+            $table->decimal('precio_unitario', 10, 2);
+            $table->decimal('descuento', 10, 2)->default(0);
+            $table->decimal('subtotal', 10, 2);
             $table->timestamps();
         });
     }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,5 +14,17 @@ class Producto extends Model
     public function proveedor()
     {
         return $this->belongsTo(Proveedor::class);
+    }
+    // En app/Models/Producto.php
+    public function facturaDetalles()
+    {
+        return $this->hasMany(FacturaDetalle::class);
+    }
+
+    public function facturas()
+    {
+        return $this->belongsToMany(Factura::class, 'factura_detalles')
+            ->using(FacturaDetalle::class)
+            ->withPivot(['cantidad', 'precio_unitario', 'descuento', 'subtotal']);
     }
 }

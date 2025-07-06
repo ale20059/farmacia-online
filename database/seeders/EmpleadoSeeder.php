@@ -16,6 +16,7 @@ class EmpleadoSeeder extends Seeder
         Empleado::create([
             'nombre' => 'Admin',
             'usuario' => 'admin',
+            'email'     => 'admin@farmacia.com',
             'foto' => null,
             'password' => bcrypt('12345678'),
             'es_admin' => true,

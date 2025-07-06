@@ -10,6 +10,8 @@ use App\Http\Controllers\TiendaController;
 use App\Http\Controllers\CarritoController;
 use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\FacturaController;
+use App\Http\Controllers\FacturaDetalleController;
 
 // Ruta principal
 Route::get('/', function () {
@@ -66,3 +68,48 @@ Route::middleware('auth.cliente')->group(function () {
 
 // Ruta de factura accesible sin autenticación
 Route::get('/cliente/factura/{id}', [CarritoController::class, 'factura'])->name('cliente.factura');
+
+
+
+
+
+
+// En routes/web.php, añade esta ruta genérica (temporal):
+Route::post('/logout', function () {
+    if (auth('empleado')->check()) {
+        return redirect()->route('empleado.logout');
+    } else {
+        return redirect()->route('cliente.logout');
+    }
+})->name('logout');
+
+// Rutas para Proveedores
+Route::resource('proveedores', ProveedorController::class);
+
+// Rutas para Facturas (ejemplo básico)
+Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+Route::get('/facturas/create', [FacturaController::class, 'create'])->name('facturas.create');
+Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+
+
+Route::middleware(['auth:empleado'])->prefix('admin')->group(function () {
+    Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('facturas.create');
+    Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+    Route::get('/facturas/{factura}', [FacturaController::class, 'show'])->name('facturas.show');
+    Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
+    Route::post('/facturas/{factura}/pagar', [FacturaController::class, 'pagar'])
+        ->name('facturas.pagar');
+});
+
+
+Route::middleware(['auth:empleado'])->prefix('admin')->group(function () {
+    // ... otras rutas de facturas
+
+    // Rutas para detalles
+    Route::post('/facturas/{factura}/detalles', [FacturaDetalleController::class, 'store'])
+        ->name('facturas.detalles.store');
+
+    Route::delete('/facturas/{factura}/detalles/{detalle}', [FacturaDetalleController::class, 'destroy'])
+        ->name('facturas.detalles.destroy');
+});

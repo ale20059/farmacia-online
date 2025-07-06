@@ -10,7 +10,7 @@ class EmpleadoController extends Controller
 {
     public function index()
     {
-        $empleados = Empleado::all();
+        $empleados = Empleado::latest()->get();
         return view('empleados.index', compact('empleados'));
     }
 
@@ -21,26 +21,28 @@ class EmpleadoController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nombre' => 'required',
-            'email' => 'required|email|unique:empleados',
-            'password' => 'required|min:6',
-            'foto' => 'nullable|image|max:2048',
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'email' => 'required|email|unique:empleados,email',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:200',
+            'foto' => 'nullable|image|max:2048', // 2MB máximo
         ]);
 
-        $rutaFoto = null;
+        // Guardar la foto si existe
         if ($request->hasFile('foto')) {
-            $rutaFoto = $request->file('foto')->store('empleados', 'public');
+            $validated['foto'] = $request->file('foto')->store('empleados', 'public');
         }
 
-        Empleado::create([
-            'nombre' => $request->nombre,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'foto' => $rutaFoto,
-        ]);
+        Empleado::create($validated);
 
-        return redirect()->route('empleados.index')->with('success', 'Empleado creado correctamente.');
+        return redirect()->route('empleados.index')
+               ->with('success', 'Empleado creado correctamente');
+    }
+
+    public function show(Empleado $empleado)
+    {
+        return view('empleados.show', compact('empleado'));
     }
 
     public function edit(Empleado $empleado)
@@ -50,45 +52,39 @@ class EmpleadoController extends Controller
 
     public function update(Request $request, Empleado $empleado)
     {
-        $request->validate([
-            'nombre' => 'required',
-            'email' => 'required|email|unique:empleados,email,' . $empleado->id,
-            'password' => 'nullable|min:6',
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'email' => 'required|email|unique:empleados,email,'.$empleado->id,
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:200',
             'foto' => 'nullable|image|max:2048',
         ]);
 
-        // Actualiza datos básicos
-        $empleado->nombre = $request->nombre;
-        $empleado->email = $request->email;
-
-        if ($request->filled('password')) {
-            $empleado->password = bcrypt($request->password);
-        }
-
-        // Si hay nueva foto
+        // Actualizar foto si se proporciona una nueva
         if ($request->hasFile('foto')) {
-            // Borra la anterior
-            if ($empleado->foto && Storage::disk('public')->exists($empleado->foto)) {
+            // Eliminar foto anterior si existe
+            if ($empleado->foto) {
                 Storage::disk('public')->delete($empleado->foto);
             }
-
-            $empleado->foto = $request->file('foto')->store('empleados', 'public');
+            $validated['foto'] = $request->file('foto')->store('empleados', 'public');
         }
 
-        $empleado->save();
+        $empleado->update($validated);
 
-        return redirect()->route('empleados.index')->with('success', 'Empleado actualizado correctamente.');
+        return redirect()->route('empleados.index')
+               ->with('success', 'Empleado actualizado correctamente');
     }
 
     public function destroy(Empleado $empleado)
     {
-        // Elimina la foto del disco
-        if ($empleado->foto && Storage::disk('public')->exists($empleado->foto)) {
+        // Eliminar foto si existe
+        if ($empleado->foto) {
             Storage::disk('public')->delete($empleado->foto);
         }
 
         $empleado->delete();
 
-        return redirect()->route('empleados.index')->with('success', 'Empleado eliminado correctamente.');
+        return redirect()->route('empleados.index')
+               ->with('success', 'Empleado eliminado correctamente');
     }
 }
