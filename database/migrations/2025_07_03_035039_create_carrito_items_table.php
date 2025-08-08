@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('carrito_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('factura_id')->constrained('facturas')->onDelete('cascade');
+            $table->foreignId('cliente_id')->constrained('clientes')->onDelete('cascade');
             $table->foreignId('producto_id')->constrained('productos')->onDelete('cascade');
             $table->integer('cantidad');
             $table->decimal('precio_unitario', 8, 2);
             $table->decimal('subtotal', 10, 2);
             $table->timestamps();
+
+            $table->unique(['cliente_id', 'producto_id']);
         });
     }
 

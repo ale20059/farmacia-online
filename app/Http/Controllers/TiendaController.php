@@ -26,12 +26,15 @@ class TiendaController extends Controller
 
         if ($item) {
             $item->cantidad += 1;
+            $item->subtotal = $item->cantidad * $item->precio_unitario;
             $item->save();
         } else {
             CarritoItem::create([
                 'cliente_id' => $clienteId,
                 'producto_id' => $producto->id,
                 'cantidad' => 1,
+                'precio_unitario' => $producto->precio,
+                'subtotal' => $producto->precio * 1,
             ]);
         }
 

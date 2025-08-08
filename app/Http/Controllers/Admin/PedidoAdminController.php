@@ -23,7 +23,10 @@ class PedidoAdminController extends Controller
     public function factura($id)
     {
         $pedido = Pedido::with(['cliente', 'detalles.producto'])->findOrFail($id);
-        $pdf = Pdf::loadView('admin.pedidos.factura', compact('pedido'));
+
+        $pdf = Pdf::loadView('admin.pedidos.factura', compact('pedido'))
+            ->setPaper([0, 0, 226.77, 600], 'portrait'); // 80mm ancho, altura ajustable
+
         return $pdf->download("factura_admin_{$pedido->id}.pdf");
     }
 }

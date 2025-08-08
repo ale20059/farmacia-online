@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/Empleado.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +9,17 @@ class Empleado extends Authenticatable
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'email', 'password', 'foto'];
+    protected $fillable = [
+        'nombre',
+        'usuario',
+        'email',
+        'password',
+        'foto',
+        'es_admin',
+    ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 }

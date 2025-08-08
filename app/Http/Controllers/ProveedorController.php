@@ -9,7 +9,7 @@ class ProveedorController extends Controller
 {
     public function index()
     {
-        $proveedores = Proveedor::all();
+        $proveedores = Proveedor::latest()->paginate(10); // Paginación para mejor rendimiento
         return view('proveedores.index', compact('proveedores'));
     }
 
@@ -20,25 +20,33 @@ class ProveedorController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nombre' => 'required|string',
-            'telefono' => 'nullable|string',
-            'correo' => 'nullable|email',
-            'direccion' => 'nullable|string',
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'telefono' => 'nullable|string|max:20',
+            'correo' => 'nullable|email|max:100|unique:proveedores,correo',
+            'direccion' => 'nullable|string|max:255',
+        ], [
+            'nombre.required' => 'El nombre del proveedor es obligatorio',
+            'correo.email' => 'Debe ingresar un correo electrónico válido',
+            'correo.unique' => 'Este correo ya está registrado para otro proveedor'
         ]);
 
-        Proveedor::create($request->all());
+        Proveedor::create($validated);
 
-        return redirect()->route('proveedores.index')->with('success', 'Proveedor creado correctamente.');
+        return redirect()->route('proveedores.index')
+            ->with('success', 'Proveedor creado correctamente.');
     }
 
-    public function edit(Proveedor $proveedor)
+    public function edit($id) // Cambia a recibir el ID directamente
     {
+        $proveedor = Proveedor::findOrFail($id);
         return view('proveedores.edit', compact('proveedor'));
     }
 
-    public function update(Request $request, Proveedor $proveedor)
+    public function update(Request $request, $id) // Cambia a recibir el ID
     {
+        $proveedor = Proveedor::findOrFail($id);
+
         $request->validate([
             'nombre' => 'required|string',
             'telefono' => 'nullable|string',
@@ -51,9 +59,17 @@ class ProveedorController extends Controller
         return redirect()->route('proveedores.index')->with('success', 'Proveedor actualizado.');
     }
 
-    public function destroy(Proveedor $proveedor)
+    public function destroy($id)
     {
-        $proveedor->delete();
-        return redirect()->route('proveedores.index')->with('success', 'Proveedor eliminado.');
+        try {
+            $proveedor = Proveedor::findOrFail($id);
+            $proveedor->delete();
+
+            return redirect()->route('proveedores.index')
+                ->with('success', 'Proveedor eliminado correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->route('proveedores.index')
+                ->with('error', 'No se pudo eliminar el proveedor: ' . $e->getMessage());
+        }
     }
 }

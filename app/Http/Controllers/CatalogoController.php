@@ -3,11 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use Illuminate\Http\Request;
 
-
-
-
-abstract class Controller
+class CatalogoController extends Controller
 {
     public function index()
     {

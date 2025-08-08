@@ -27,4 +27,9 @@ class Producto extends Model
             ->using(FacturaDetalle::class)
             ->withPivot(['cantidad', 'precio_unitario', 'descuento', 'subtotal']);
     }
+
+    public function detallePedidos()
+    {
+        return $this->hasMany(PedidoDetalle::class);
+    }
 }

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Factura {{ $factura->numero_factura }} - PHARMA FDINOVA</title>
+    <title>Factura Pedido #{{ $pedido->id }}</title>
     <style>
         body {
             font-family: monospace;
@@ -53,14 +53,14 @@
         PHARMA FDINOVA<br>
         NIT: 123456789<br>
         Tel: 555-1234-567<br>
-        FACTURA SIMPLIFICADA
+        FACTURA PEDIDO
     </div>
 
     <div class="line"></div>
 
-    <p><strong>Factura:</strong> {{ $factura->id }}</p>
-    <p><strong>Nit {{ $factura->numero_factura }}</strong></p>
-    <p><strong>Fecha:</strong> {{ $factura->fecha_emision->format('d/m/Y') }}</p>
+    <p><strong>Pedido:</strong> #{{ $pedido->id }}</p>
+    <p><strong>Cliente:</strong> {{ $pedido->cliente->nombre }}</p>
+    <p><strong>Fecha:</strong> {{ $pedido->created_at->format('d/m/Y') }}</p>
 
     <div class="line"></div>
 
@@ -72,13 +72,14 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($factura->detalles as $detalle)
+            @foreach ($pedido->detalles as $detalle)
                 <tr>
                     <td colspan="2">{{ $detalle->producto->nombre }}</td>
                 </tr>
                 <tr>
-                    <td>{{ $detalle->cantidad }} x Q{{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td style="text-align:right;">Q{{ number_format($detalle->subtotal, 2) }}</td>
+                    <td>{{ $detalle->cantidad }} x Q{{ number_format($detalle->producto->precio, 2) }}</td>
+                    <td style="text-align:right;">
+                        Q{{ number_format($detalle->producto->precio * $detalle->cantidad, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -87,17 +88,11 @@
     <div class="line"></div>
 
     <table class="totales">
-        <tr>
-            <td>SUBTOTAL:</td>
-            <td>Q{{ number_format($factura->subtotal, 2) }}</td>
-        </tr>
-        <tr>
-            <td>IVA ({{ $factura->impuestos }}%):</td>
-            <td>Q{{ number_format($factura->subtotal * ($factura->impuestos / 100), 2) }}</td>
-        </tr>
         <tr class="bold">
             <td>TOTAL:</td>
-            <td>Q{{ number_format($factura->total, 2) }}</td>
+            <td>
+                Q{{ number_format($pedido->detalles->sum(fn($d) => $d->producto->precio * $d->cantidad), 2) }}
+            </td>
         </tr>
     </table>
 

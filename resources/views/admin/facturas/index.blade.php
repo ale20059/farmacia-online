@@ -20,7 +20,7 @@
                 <table class="table table-bordered table-hover">
                     <thead class="table-dark">
                         <tr>
-                            <th>N° Factura</th>
+                            <th>Nit</th>
                             <th>Proveedor</th>
                             <th>Fecha</th>
                             <th>Total</th>
@@ -32,7 +32,13 @@
                         @forelse($facturas as $factura)
                         <tr>
                             <td>{{ $factura->numero_factura }}</td>
-                            <td>{{ $factura->proveedor->nombre }}</td>
+                            <td>
+                                @if($factura->proveedor)
+                                    {{ $factura->proveedor->nombre }}
+                                @else
+                                    <em>No asignado</em>
+                                @endif
+                            </td>
                             <td>{{ $factura->fecha_emision->format('d/m/Y') }}</td>
                             <td>Q{{ number_format($factura->total, 2) }}</td>
                             <td>

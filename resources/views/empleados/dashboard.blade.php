@@ -1,105 +1,126 @@
-<!-- resources/views/empleados/dashboard.blade.php -->
+@extends('layouts.admin')
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard Empleado</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
+@section('content')
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar (ya incluido en layouts.admin) -->
+            <div class="col-md-12">
+                <!-- Header del Dashboard -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h4 font-weight-bold text-gray-800">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Panel de Empleado
+                    </h2>
+                    <span class="badge badge-primary p-2">
+                        Bienvenido, {{ Auth::guard('empleado')->user()->nombre }}
+                    </span>
+                </div>
 
-        header {
-            background-color: #1976d2;
-            color: white;
-            padding: 1em 2em;
-        }
+                <!-- Tarjetas de Resumen -->
+                <div class="row mb-4">
+                    <!-- Tarjeta Productos -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-primary shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                            Productos</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalProductos }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        .container {
-            padding: 2em;
-        }
+                    <!-- Tarjeta Pedidos -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            Pedidos</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalPedidos }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5em;
-        }
+                    <!-- Tarjeta Ventas -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-info shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                            Ventas Totales</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            Q{{ number_format($totalVentas, 2) }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        .card {
-            background: white;
-            padding: 1.5em;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
+                    <!-- Tarjeta Empleados -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Empleados</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalEmpleados }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        h1, h2 {
-            margin-top: 0;
-        }
-
-        .number {
-            font-size: 2em;
-            color: #1976d2;
-        }
-
-        .logout-btn {
-            background-color: #e53935;
-            color: white;
-            border: none;
-            padding: 0.6em 1.2em;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 2em;
-        }
-
-        a {
-            text-decoration: none;
-            color: #1976d2;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-<header>
-    <h2>Panel de Empleado - Bienvenido, {{ Auth::guard('empleado')->user()->nombre }} 👋</h2>
-</header>
-
-<div class="container">
-    <div class="grid">
-        <div class="card">
-            <h3>Productos</h3>
-            <p class="number">{{ $totalProductos }}</p>
-            <a href="{{ route('productos.index') }}">Ver productos</a>
-        </div>
-
-        <div class="card">
-            <h3>Pedidos</h3>
-            <p class="number">{{ $totalPedidos }}</p>
-            <a href="{{ route('admin.pedidos.index') }}">Ver pedidos</a>
-        </div>
-
-        <div class="card">
-            <h3>Ventas Totales</h3>
-            <p class="number">Q{{ number_format($totalVentas, 2) }}</p>
-        </div>
-
-        <div class="card">
-            <h3>Empleados</h3>
-            <p class="number">{{ $totalEmpleados }}</p>
-            <a href="{{ route('empleados.index') }}">Ver empleados</a>
+                <!-- Sección de Cerrar Sesión -->
+                <div class="text-center mt-4">
+                    <form action="{{ route('empleado.logout') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-danger btn-circle btn-lg" title="Cerrar Sesión">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <form action="{{ route('empleado.logout') }}" method="POST">
-        @csrf
-        <button type="submit" class="logout-btn">Cerrar Sesión</button>
-    </form>
-</div>
+    <style>
+        .card {
+            transition: all 0.3s ease;
+        }
 
-</body>
-</html>
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+@endsection

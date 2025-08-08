@@ -12,25 +12,28 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class FacturaController extends Controller
 {
-    public function pagar(Factura $factura)
+    public function pagar($id)
     {
-        // Verifica si ya está pagada
-        if ($factura->estado === 'pagada') {
-            return back()->with('warning', '¡La factura ya estaba pagada!');
-        }
+        $factura = Factura::findOrFail($id);
+        $factura->estado = 'pagada';
+        $factura->save();
 
-        // Actualiza el estado
-        $factura->update(['estado' => 'pagada']);
+        return redirect()->back()->with('success', 'Factura pagada correctamente.');
+    }
 
-        return back()->with('success', 'Factura marcada como pagada correctamente');
+    public function pdf(Factura $factura)
+    {
+        $factura->load('detalles.producto', 'proveedor');
+
+        $pdf = Pdf::loadView('admin.facturas.pdf', compact('factura'))
+            ->setPaper([0, 0, 226.77, 600], 'portrait');
+
+        return $pdf->download("factura-{$factura->numero_factura}.pdf");
     }
 
     public function index()
     {
-        $facturas = Factura::with('proveedor')
-            ->orderBy('fecha_emision', 'desc')
-            ->paginate(10);
-
+        $facturas = Factura::with('proveedor')->orderBy('fecha_emision', 'desc')->paginate(10);
         return view('admin.facturas.index', compact('facturas'));
     }
 
@@ -38,17 +41,16 @@ class FacturaController extends Controller
     {
         $proveedores = Proveedor::all();
         $productos = Producto::where('stock', '>', 0)->get();
-
         return view('admin.facturas.create', compact('proveedores', 'productos'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'proveedor_id' => 'required|exists:proveedores,id',
             'numero_factura' => 'required|unique:facturas',
             'fecha_emision' => 'required|date',
             'impuestos' => 'required|numeric|min:0',
+            'moneda' => 'required|in:GTQ,USD',
             'productos' => 'required|array|min:1',
             'productos.*.id' => 'required|exists:productos,id',
             'productos.*.cantidad' => 'required|numeric|min:1',
@@ -60,10 +62,10 @@ class FacturaController extends Controller
 
         try {
             $factura = Factura::create([
-                'proveedor_id' => $request->proveedor_id,
                 'numero_factura' => $request->numero_factura,
                 'fecha_emision' => $request->fecha_emision,
                 'impuestos' => $request->impuestos,
+                'moneda' => $request->moneda,
                 'subtotal' => 0,
                 'total' => 0,
                 'estado' => 'pendiente',
@@ -73,24 +75,21 @@ class FacturaController extends Controller
             $subtotal = 0;
 
             foreach ($request->productos as $producto) {
-                $precio = $producto['precio_unitario'];
-                $cantidad = $producto['cantidad'];
-                $descuento = $producto['descuento'] ?? 0;
-                $subtotalProducto = ($precio * $cantidad) - $descuento;
+                $subtotalProducto = ($producto['precio_unitario'] * $producto['cantidad']) - ($producto['descuento'] ?? 0);
 
-                $factura->detalles()->create([
+                FacturaDetalle::create([
+                    'factura_id' => $factura->id,
                     'producto_id' => $producto['id'],
-                    'cantidad' => $cantidad,
-                    'precio_unitario' => $precio,
-                    'descuento' => $descuento,
+                    'cantidad' => $producto['cantidad'],
+                    'precio_unitario' => $producto['precio_unitario'],
+                    'descuento' => $producto['descuento'] ?? 0,
                     'subtotal' => $subtotalProducto,
                 ]);
 
                 $subtotal += $subtotalProducto;
             }
 
-            $impuestosCalculo = $subtotal * ($request->impuestos / 100);
-            $total = $subtotal + $impuestosCalculo;
+            $total = $subtotal + ($subtotal * ($request->impuestos / 100));
 
             $factura->update([
                 'subtotal' => $subtotal,
@@ -99,11 +98,10 @@ class FacturaController extends Controller
 
             DB::commit();
 
-            return redirect()->route('facturas.show', $factura)
-                ->with('success', 'Factura creada correctamente');
+            return redirect()->route('facturas.show', $factura)->with('success', 'Factura creada correctamente');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Error: ' . $e->getMessage());
+            return back()->with('error', 'Error al guardar la factura: ' . $e->getMessage());
         }
     }
 
@@ -111,69 +109,5 @@ class FacturaController extends Controller
     {
         $factura->load('detalles.producto', 'proveedor');
         return view('admin.facturas.show', compact('factura'));
-    }
-
-    public function edit(Factura $factura)
-    {
-        $proveedores = Proveedor::all();
-        $productos = Producto::where('stock', '>', 0)->get();
-
-        return view('admin.facturas.edit', compact('factura', 'proveedores', 'productos'));
-    }
-
-    public function update(Request $request, Factura $factura)
-    {
-        $request->validate([
-            'proveedor_id' => 'required|exists:proveedores,id',
-            'numero_factura' => 'required|unique:facturas,numero_factura,' . $factura->id,
-            'fecha_emision' => 'required|date',
-            'impuestos' => 'required|numeric|min:0'
-        ]);
-
-        $factura->update($request->only([
-            'proveedor_id',
-            'numero_factura',
-            'fecha_emision',
-            'fecha_vencimiento',
-            'impuestos',
-            'notas'
-        ]));
-
-        return redirect()->route('facturas.show', $factura)
-            ->with('success', 'Factura actualizada correctamente');
-    }
-
-    public function pdf(Factura $factura)
-    {
-        $factura->load('detalles.producto', 'proveedor');
-
-        $pdf = PDF::loadView('admin.facturas.pdf', compact('factura'))
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->download("factura-{$factura->numero_factura}.pdf");
-    }
-
-    public function destroy(Factura $factura)
-    {
-        DB::beginTransaction();
-
-        try {
-            // Revertir stock
-            foreach ($factura->detalles as $detalle) {
-                Producto::where('id', $detalle->producto_id)
-                    ->decrement('stock', $detalle->cantidad);
-            }
-
-            $factura->detalles()->delete();
-            $factura->delete();
-
-            DB::commit();
-
-            return redirect()->route('facturas.index')
-                ->with('success', 'Factura eliminada correctamente');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error al eliminar la factura: ' . $e->getMessage());
-        }
     }
 }

@@ -8,9 +8,18 @@ use Illuminate\Support\Facades\Storage;
 
 class EmpleadoController extends Controller
 {
+
+    public function removePhoto(Empleado $empleado)
+    {
+        Storage::delete($empleado->foto);
+        $empleado->update(['foto' => null]);
+
+        return back()->with('success', 'Foto eliminada correctamente');
+    }
+
     public function index()
     {
-        $empleados = Empleado::latest()->get();
+        $empleados = Empleado::latest()->paginate(10);
         return view('empleados.index', compact('empleados'));
     }
 
@@ -23,11 +32,14 @@ class EmpleadoController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
+            'usuario' => 'required|string|max:50|unique:empleados,usuario',
             'email' => 'required|email|unique:empleados,email',
-            'telefono' => 'nullable|string|max:20',
-            'direccion' => 'nullable|string|max:200',
+            'password' => 'required|string|min:6',
             'foto' => 'nullable|image|max:2048', // 2MB máximo
         ]);
+
+        // Encriptar contraseña antes de guardar
+        $validated['password'] = bcrypt($validated['password']);
 
         // Guardar la foto si existe
         if ($request->hasFile('foto')) {
@@ -37,7 +49,7 @@ class EmpleadoController extends Controller
         Empleado::create($validated);
 
         return redirect()->route('empleados.index')
-               ->with('success', 'Empleado creado correctamente');
+            ->with('success', 'Empleado creado correctamente');
     }
 
     public function show(Empleado $empleado)
@@ -54,15 +66,21 @@ class EmpleadoController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
-            'email' => 'required|email|unique:empleados,email,'.$empleado->id,
-            'telefono' => 'nullable|string|max:20',
-            'direccion' => 'nullable|string|max:200',
+            'usuario' => 'required|string|max:50|unique:empleados,usuario,' . $empleado->id,
+            'email' => 'required|email|unique:empleados,email,' . $empleado->id,
+            'password' => 'nullable|string|min:6',
             'foto' => 'nullable|image|max:2048',
         ]);
 
+        // Si cambia la contraseña la encripta
+        if (!empty($validated['password'])) {
+            $validated['password'] = bcrypt($validated['password']);
+        } else {
+            unset($validated['password']); // No actualizar password si no viene
+        }
+
         // Actualizar foto si se proporciona una nueva
         if ($request->hasFile('foto')) {
-            // Eliminar foto anterior si existe
             if ($empleado->foto) {
                 Storage::disk('public')->delete($empleado->foto);
             }
@@ -72,7 +90,7 @@ class EmpleadoController extends Controller
         $empleado->update($validated);
 
         return redirect()->route('empleados.index')
-               ->with('success', 'Empleado actualizado correctamente');
+            ->with('success', 'Empleado actualizado correctamente');
     }
 
     public function destroy(Empleado $empleado)
@@ -85,6 +103,6 @@ class EmpleadoController extends Controller
         $empleado->delete();
 
         return redirect()->route('empleados.index')
-               ->with('success', 'Empleado eliminado correctamente');
+            ->with('success', 'Empleado eliminado correctamente');
     }
 }

@@ -10,13 +10,14 @@ use App\Http\Controllers\TiendaController;
 use App\Http\Controllers\CarritoController;
 use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\FacturaDetalleController;
+use App\Http\Controllers\PedidoController;
 
 // Ruta principal
-Route::get('/', function () {
-    return view('welcome');
-});
+
+Route::get('/', [CatalogoController::class, 'index']);
 
 // Rutas de autenticación para empleados
 Route::prefix('empleado')->group(function () {
@@ -35,11 +36,26 @@ Route::middleware(['auth:empleado'])->group(function () {
     Route::resource('empleados', EmpleadoController::class);
     Route::resource('proveedores', ProveedorController::class);
 
+    Route::delete('/empleados/{empleado}/removePhoto', [EmpleadoController::class, 'removePhoto'])
+     ->name('empleados.removePhoto');
+
     // Administración de pedidos
     Route::prefix('admin')->group(function () {
         Route::get('/pedidos', [PedidoAdminController::class, 'index'])->name('admin.pedidos.index');
         Route::get('/pedidos/{id}', [PedidoAdminController::class, 'show'])->name('admin.pedidos.show');
         Route::get('/pedidos/{id}/factura', [PedidoAdminController::class, 'factura'])->name('admin.pedidos.factura');
+
+        // Facturas
+        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+        Route::get('/facturas/create', [FacturaController::class, 'create'])->name('facturas.create');
+        Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
+        Route::get('/facturas/{factura}', [FacturaController::class, 'show'])->name('facturas.show');
+        Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
+        Route::post('/facturas/{factura}/pagar', [FacturaController::class, 'pagar'])->name('facturas.pagar');
+
+        // Detalles
+        Route::post('/facturas/{factura}/detalles', [FacturaDetalleController::class, 'store'])->name('facturas.detalles.store');
+        Route::delete('/facturas/{factura}/detalles/{detalle}', [FacturaDetalleController::class, 'destroy'])->name('facturas.detalles.destroy');
     });
 });
 
@@ -64,17 +80,15 @@ Route::middleware('auth.cliente')->group(function () {
         Route::post('/eliminar/{item}', [CarritoController::class, 'eliminar'])->name('cliente.carrito.eliminar');
         Route::post('/checkout', [CarritoController::class, 'checkout'])->name('cliente.carrito.checkout');
     });
+
+    // Pedidos del cliente
+    Route::get('/cliente/pedidos', [PedidoController::class, 'index'])->name('cliente.pedidos');
 });
 
 // Ruta de factura accesible sin autenticación
 Route::get('/cliente/factura/{id}', [CarritoController::class, 'factura'])->name('cliente.factura');
 
-
-
-
-
-
-// En routes/web.php, añade esta ruta genérica (temporal):
+// Ruta genérica de logout
 Route::post('/logout', function () {
     if (auth('empleado')->check()) {
         return redirect()->route('empleado.logout');
@@ -83,33 +97,6 @@ Route::post('/logout', function () {
     }
 })->name('logout');
 
-// Rutas para Proveedores
-Route::resource('proveedores', ProveedorController::class);
-
-// Rutas para Facturas (ejemplo básico)
-Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
-Route::get('/facturas/create', [FacturaController::class, 'create'])->name('facturas.create');
-Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
 
 
-Route::middleware(['auth:empleado'])->prefix('admin')->group(function () {
-    Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
-    Route::get('/facturas/create', [FacturaController::class, 'create'])->name('facturas.create');
-    Route::post('/facturas', [FacturaController::class, 'store'])->name('facturas.store');
-    Route::get('/facturas/{factura}', [FacturaController::class, 'show'])->name('facturas.show');
-    Route::get('/facturas/{factura}/pdf', [FacturaController::class, 'pdf'])->name('facturas.pdf');
-    Route::post('/facturas/{factura}/pagar', [FacturaController::class, 'pagar'])
-        ->name('facturas.pagar');
-});
-
-
-Route::middleware(['auth:empleado'])->prefix('admin')->group(function () {
-    // ... otras rutas de facturas
-
-    // Rutas para detalles
-    Route::post('/facturas/{factura}/detalles', [FacturaDetalleController::class, 'store'])
-        ->name('facturas.detalles.store');
-
-    Route::delete('/facturas/{factura}/detalles/{detalle}', [FacturaDetalleController::class, 'destroy'])
-        ->name('facturas.detalles.destroy');
-});
+Route::get('/admin/pedidos/{id}/factura', [PedidoAdminController::class, 'factura'])->name('admin.pedidos.factura');
